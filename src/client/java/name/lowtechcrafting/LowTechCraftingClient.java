@@ -7,6 +7,5 @@ public class LowTechCraftingClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		HandledScreens.register(LowTechCrafting.AUTOCRAFTING_TABLE_SCREEN_HANDLER, AutoCraftingScreen::new);
-		HandledScreens.register(LowTechCrafting.BOX_SCREEN_HANDLER, BoxScreen::new);
 	}
 }
