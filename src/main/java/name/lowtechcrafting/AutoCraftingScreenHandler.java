@@ -1,5 +1,7 @@
 package name.lowtechcrafting;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import net.fabricmc.loader.impl.util.log.Log;
@@ -28,8 +30,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
 
 public class AutoCraftingScreenHandler
-extends AbstractRecipeScreenHandler<RecipeInputInventory> {
-    private final RecipeInputInventory input = new CraftingInventory(this, 3, 3);
+        extends AbstractRecipeScreenHandler<RecipeInputInventory> {
+    private final RecipeInputInventory input = new AutoCraftingInventory(this, 3, 3);
     private final CraftingResultInventory result = new CraftingResultInventory();
     private final Inventory persistentInventory;
     private final ScreenHandlerContext context;
@@ -37,20 +39,22 @@ extends AbstractRecipeScreenHandler<RecipeInputInventory> {
 
     public AutoCraftingScreenHandler(int syncId, PlayerInventory playerInventory) {
         this(syncId, playerInventory, new SimpleInventory(10), ScreenHandlerContext.EMPTY);
-        Log.info(LogCategory.GENERAL, "AutoCraftingScreenHandler entry constructor");
 
     }
 
-    public AutoCraftingScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory, ScreenHandlerContext context) {
+    public AutoCraftingScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory,
+            ScreenHandlerContext context) {
         super(LowTechCrafting.AUTOCRAFTING_TABLE_SCREEN_HANDLER, syncId);
-        Log.info(LogCategory.GENERAL, "AutoCraftingScreenHandler chunky constructor");
         checkSize(inventory, 10);
-        this.persistentInventory = inventory;
+        persistentInventory = inventory;
         persistentInventory.onOpen(playerInventory.player);
+        
         int j;
         int i;
         this.context = context;
         this.player = playerInventory.player;
+
+
         this.addSlot(new CraftingResultSlot(playerInventory.player, this.input, this.result, 0, 124, 35));
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
@@ -65,34 +69,67 @@ extends AbstractRecipeScreenHandler<RecipeInputInventory> {
         for (i = 0; i < 9; ++i) {
             this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
         }
+        Log.info(LogCategory.GENERAL, "Init ------" + inventory);
+        ((AutoCraftingInventory) input).copyStacks(persistentInventory, 1);
+        debugInventory(persistentInventory);
     }
 
-    protected static void updateResult(ScreenHandler handler, World world, PlayerEntity player, RecipeInputInventory craftingInventory, CraftingResultInventory resultInventory) {
+
+    private void syncToPersistentInv() {
+        // Sync crafting inventory and recipe inventory to persistent inventory
+        if (input.size() > 8) {
+            for (int i = 0; i < 9; i++) {
+                persistentInventory.setStack(i + 1, input.getStack(i));
+            }
+        }
+        if (result.size() > 0) {
+            persistentInventory.setStack(0, result.getStack(0));
+        }
+        debugInventory(persistentInventory);
+    }
+
+    private static void debugInventory(Inventory inv) {
+        ArrayList<String> debug = new ArrayList<>();
+        for (int i = 0; i < inv.size(); i++) {
+            debug.add(String.format("%s:%d", inv.getStack(i).getItem().toString(), inv.getStack(i).getCount()));
+        }
+        Log.info(LogCategory.GENERAL, debug.toString());
+    }
+
+    protected static void updateResult(ScreenHandler handler, World world, PlayerEntity player,
+            RecipeInputInventory craftingInventory, CraftingResultInventory resultInventory) {
         ItemStack itemStack2;
         CraftingRecipe craftingRecipe;
         if (world.isClient) {
             return;
         }
-        ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity)player;
+
+        ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) player;
         ItemStack itemStack = ItemStack.EMPTY;
-        Optional<CraftingRecipe> optional = world.getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING, craftingInventory, world);
-        if (optional.isPresent() && resultInventory.shouldCraftRecipe(world, serverPlayerEntity, craftingRecipe = optional.get()) && (itemStack2 = craftingRecipe.craft(craftingInventory, world.getRegistryManager())).isItemEnabled(world.getEnabledFeatures())) {
+        Optional<CraftingRecipe> optional = world.getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING,
+                craftingInventory, world);
+        if (optional.isPresent()
+                && resultInventory.shouldCraftRecipe(world, serverPlayerEntity, craftingRecipe = optional.get())
+                && (itemStack2 = craftingRecipe.craft(craftingInventory, world.getRegistryManager()))
+                        .isItemEnabled(world.getEnabledFeatures())) {
             itemStack = itemStack2;
         }
         resultInventory.setStack(0, itemStack);
         handler.setPreviousTrackedSlot(0, itemStack);
-        serverPlayerEntity.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(handler.syncId, handler.nextRevision(), 0, itemStack));
+        serverPlayerEntity.networkHandler
+                .sendPacket(new ScreenHandlerSlotUpdateS2CPacket(handler.syncId, handler.nextRevision(), 0, itemStack));
     }
 
     @Override
     public void onContentChanged(Inventory inventory) {
-        Log.info(LogCategory.GENERAL, "AutoCraftingScreenHandler on content changed");
-        this.context.run((world, pos) -> AutoCraftingScreenHandler.updateResult(this, world, this.player, this.input, this.result));
+        this.context.run((world, pos) -> AutoCraftingScreenHandler.updateResult(this, world, this.player, this.input,
+                this.result));
+        // TODO figure out where crafting inventory stacks are decremented so hoppers work correctly
+        syncToPersistentInv();
     }
 
     @Override
     public void populateRecipeFinder(RecipeMatcher finder) {
-        Log.info(LogCategory.GENERAL, "AutoCraftingScreenHandler pop recipe finder");
         this.input.provideRecipeInputs(finder);
     }
 
@@ -110,30 +147,36 @@ extends AbstractRecipeScreenHandler<RecipeInputInventory> {
 
     @Override
     public void onClosed(PlayerEntity player) {
+        syncToPersistentInv();
         super.onClosed(player);
-        Log.info(LogCategory.GENERAL, "onClose");
     }
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        // TODO need to set this block state to this block? canUse is what is closing the menu
-        return true;//AutoCraftingScreenHandler.canUse(this.context, player, LowTechCrafting.AUTOCRAFTING_TABLE_BLOCK);
+        // TODO need to set this block state to this block? canUse is what is closing
+        // the menu
+        return true;// AutoCraftingScreenHandler.canUse(this.context, player,
+                    // LowTechCrafting.AUTOCRAFTING_TABLE_BLOCK);
     }
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int slot) {
         ItemStack itemStack = ItemStack.EMPTY;
-        Slot slot2 = (Slot)this.slots.get(slot);
+        Slot slot2 = (Slot) this.slots.get(slot);
         if (slot2 != null && slot2.hasStack()) {
             ItemStack itemStack2 = slot2.getStack();
             itemStack = itemStack2.copy();
             if (slot == 0) {
-                this.context.run((world, pos) -> itemStack2.getItem().onCraft(itemStack2, (World)world, player));
+                this.context.run((world, pos) -> itemStack2.getItem().onCraft(itemStack2, (World) world, player));
                 if (!this.insertItem(itemStack2, 10, 46, true)) {
                     return ItemStack.EMPTY;
                 }
                 slot2.onQuickTransfer(itemStack2, itemStack);
-            } else if (slot >= 10 && slot < 46 ? !this.insertItem(itemStack2, 1, 10, false) && (slot < 37 ? !this.insertItem(itemStack2, 37, 46, false) : !this.insertItem(itemStack2, 10, 37, false)) : !this.insertItem(itemStack2, 10, 46, false)) {
+            } else if (slot >= 10 && slot < 46
+                    ? !this.insertItem(itemStack2, 1, 10, false)
+                            && (slot < 37 ? !this.insertItem(itemStack2, 37, 46, false)
+                                    : !this.insertItem(itemStack2, 10, 37, false))
+                    : !this.insertItem(itemStack2, 10, 46, false)) {
                 return ItemStack.EMPTY;
             }
             if (itemStack2.isEmpty()) {
@@ -187,4 +230,3 @@ extends AbstractRecipeScreenHandler<RecipeInputInventory> {
         return index != this.getCraftingResultSlotIndex();
     }
 }
-

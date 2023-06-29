@@ -5,6 +5,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.ActionResult;
@@ -76,80 +78,31 @@ public class AutoCraftingTable extends BlockWithEntity {
         }
     }
 
-    // @Override
-    // public void setPlacedBy(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
-    // {
-    //     BlockEntity te = world.getBlockEntity(pos);
+    public static int calcRedstoneFromInventory(Inventory inv)
+    {
+        if (inv != null)
+        {
+            final int numSlots = inv.size();
 
-    //     if (te instanceof BlockEntityCrafting tec)
-    //     {
-    //         CompoundTag nbt = stack.getTag();
+            if (numSlots > 0)
+            {
+                int nonEmptyStacks = 0;
 
-    //         // If the ItemStack has a tag containing saved TE data, restore it to the just placed block/TE
-    //         if (nbt != null && nbt.contains("BlockEntityTag", Tag.TAG_COMPOUND))
-    //         {
-    //             tec.readFromNBTCustom(nbt.getCompound("BlockEntityTag"));
-    //         }
-    //         else
-    //         {
-    //             if (stack.hasCustomHoverName())
-    //             {
-    //                 tec.setInventoryName(stack.getHoverName().getString());
-    //             }
-    //         }
-    //     }
-    // }
+                // Ignore the output slot, start from slot 1
+                for (int slot = 1; slot < numSlots; ++slot)
+                {
+                    ItemStack stack = inv.getStack(slot);
 
-    // @Override
-    // @Deprecated
-    // public boolean hasAnalogOutputSignal(BlockState state)
-    // {
-    //     return true;
-    // }
+                    if (stack.isEmpty() == false)
+                    {
+                        nonEmptyStacks++;
+                    }
+                }
 
-    // @Override
-    // public int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos)
-    // {
-    //     BlockEntity te = world.getBlockEntity(pos);
+                return (nonEmptyStacks * 15) / 9;
+            }
+        }
 
-    //     if (te != null && this.isTileEntityValid(te))
-    //     {
-    //         LazyOptional<IItemHandler> optional = te.getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.NORTH);
-
-    //         if (optional.isPresent())
-    //         {
-    //             return calcRedstoneFromInventory(optional.orElse(null));
-    //         }
-    //     }
-
-    //     return 0;
-    // }
-
-    // public static int calcRedstoneFromInventory(@Nullable IItemHandler inv)
-    // {
-    //     if (inv != null)
-    //     {
-    //         final int numSlots = inv.getSlots();
-
-    //         if (numSlots > 0)
-    //         {
-    //             int nonEmptyStacks = 0;
-
-    //             // Ignore the output slot, start from slot 1
-    //             for (int slot = 1; slot < numSlots; ++slot)
-    //             {
-    //                 ItemStack stack = inv.getStackInSlot(slot);
-
-    //                 if (stack.isEmpty() == false)
-    //                 {
-    //                     ++nonEmptyStacks;
-    //                 }
-    //             }
-
-    //             return (nonEmptyStacks * 15) / 9;
-    //         }
-    //     }
-
-    //     return 0;
-    // }
+        return 0;
+    }
 }
