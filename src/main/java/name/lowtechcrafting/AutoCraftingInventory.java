@@ -7,7 +7,6 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.collection.DefaultedList;
@@ -80,7 +79,7 @@ public class AutoCraftingInventory
                 this.stacks.set(i, inv.getStack(i + offset));
             }
         }
-        onContentChanged();
+        ((AutoCraftingScreenHandler) this.handler).onContentSynced();
     }
 
     @Override

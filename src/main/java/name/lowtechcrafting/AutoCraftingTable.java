@@ -5,10 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -18,8 +15,7 @@ import net.minecraft.world.World;
 
 public class AutoCraftingTable extends BlockWithEntity {
 
-    public AutoCraftingTable(Settings settings)
-    {
+    public AutoCraftingTable(Settings settings) {
         super(settings);
     }
 
@@ -33,8 +29,7 @@ public class AutoCraftingTable extends BlockWithEntity {
         return BlockRenderType.MODEL;
     }
 
-    public boolean isTileEntityValid(BlockEntity te)
-    {
+    public boolean isTileEntityValid(BlockEntity te) {
         return te != null && te.isRemoved() == false;
     }
 
@@ -45,24 +40,29 @@ public class AutoCraftingTable extends BlockWithEntity {
 
     @Override
     public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
-        return ScreenHandler.calculateComparatorOutput(world.getBlockEntity(pos));
+        return ((AutoCraftingTableEntity) world.getBlockEntity(pos)).calcRedstoneFromInventory();
     }
 
+    // TODO last thing? update comparators when inventory updates
+
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+            BlockHitResult hit) {
         if (!world.isClient) {
-            //This will call the createScreenHandlerFactory method from BlockWithEntity, which will return our blockEntity casted to
-            //a namedScreenHandlerFactory. If your block class does not extend BlockWithEntity, it needs to implement createScreenHandlerFactory.
+            // This will call the createScreenHandlerFactory method from BlockWithEntity,
+            // which will return our blockEntity casted to
+            // a namedScreenHandlerFactory. If your block class does not extend
+            // BlockWithEntity, it needs to implement createScreenHandlerFactory.
             NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
 
             if (screenHandlerFactory != null) {
-                //With this call the server will request the client to open the appropriate Screenhandler
+                // With this call the server will request the client to open the appropriate
+                // Screenhandler
                 player.openHandledScreen(screenHandlerFactory);
             }
         }
         return ActionResult.SUCCESS;
     }
-
 
     @Override
     @Deprecated
@@ -70,39 +70,12 @@ public class AutoCraftingTable extends BlockWithEntity {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof AutoCraftingTableEntity) {
-                ItemScatterer.spawn(world, pos, (AutoCraftingTableEntity)blockEntity);
+                ItemScatterer.spawn(world, pos, ((AutoCraftingTableEntity) blockEntity).getDroppableStacks());
                 // update comparators
-                world.updateComparators(pos,this);
+                world.updateComparators(pos, this);
             }
             super.onStateReplaced(state, world, pos, newState, moved);
         }
     }
 
-    public static int calcRedstoneFromInventory(Inventory inv)
-    {
-        if (inv != null)
-        {
-            final int numSlots = inv.size();
-
-            if (numSlots > 0)
-            {
-                int nonEmptyStacks = 0;
-
-                // Ignore the output slot, start from slot 1
-                for (int slot = 1; slot < numSlots; ++slot)
-                {
-                    ItemStack stack = inv.getStack(slot);
-
-                    if (stack.isEmpty() == false)
-                    {
-                        nonEmptyStacks++;
-                    }
-                }
-
-                return (nonEmptyStacks * 15) / 9;
-            }
-        }
-
-        return 0;
-    }
 }

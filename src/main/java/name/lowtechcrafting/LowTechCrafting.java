@@ -26,7 +26,7 @@ public class LowTechCrafting implements ModInitializer {
 
     static {
         AUTOCRAFTING_TABLE_BLOCK = Registry.register(Registries.BLOCK, AUTOCRAFTING_ID, new AutoCraftingTable(FabricBlockSettings.copyOf(Blocks.CRAFTING_TABLE)));
-        AUTOCRAFTING_TABLE_ITEM = Registry.register(Registries.ITEM, AUTOCRAFTING_ID, new BlockItem(AUTOCRAFTING_TABLE_BLOCK, new FabricItemSettings()));
+        AUTOCRAFTING_TABLE_ITEM = Registry.register(Registries.ITEM, AUTOCRAFTING_ID, new AutoCraftingItem(AUTOCRAFTING_TABLE_BLOCK, new FabricItemSettings()));
         AUTOCRAFTING_TABLE_ENTITY = Registry.register(Registries.BLOCK_ENTITY_TYPE, AUTOCRAFTING_ID,
                 FabricBlockEntityTypeBuilder.create(AutoCraftingTableEntity::new, AUTOCRAFTING_TABLE_BLOCK).build());
         AUTOCRAFTING_TABLE_SCREEN_HANDLER = ScreenHandlerRegistry.registerSimple(AUTOCRAFTING_ID, AutoCraftingScreenHandler::new);

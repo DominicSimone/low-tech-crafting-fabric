@@ -48,12 +48,11 @@ public class AutoCraftingScreenHandler
         checkSize(inventory, 10);
         persistentInventory = inventory;
         persistentInventory.onOpen(playerInventory.player);
-        
+
         int j;
         int i;
         this.context = context;
         this.player = playerInventory.player;
-
 
         this.addSlot(new CraftingResultSlot(playerInventory.player, this.input, this.result, 0, 124, 35));
         for (i = 0; i < 3; ++i) {
@@ -70,22 +69,19 @@ public class AutoCraftingScreenHandler
             this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
         }
         Log.info(LogCategory.GENERAL, "Init ------" + inventory);
-        ((AutoCraftingInventory) input).copyStacks(persistentInventory, 1);
+        syncFromPersistentInv();
         debugInventory(persistentInventory);
     }
 
+    public void syncToPersistentInv() {
+        if (persistentInventory instanceof AutoCraftingTableEntity) {
+            ((AutoCraftingTableEntity) persistentInventory).syncFromScreen(input);
+            debugInventory(persistentInventory);
+        }
+    }
 
-    private void syncToPersistentInv() {
-        // Sync crafting inventory and recipe inventory to persistent inventory
-        if (input.size() > 8) {
-            for (int i = 0; i < 9; i++) {
-                persistentInventory.setStack(i + 1, input.getStack(i));
-            }
-        }
-        if (result.size() > 0) {
-            persistentInventory.setStack(0, result.getStack(0));
-        }
-        debugInventory(persistentInventory);
+    public void syncFromPersistentInv() {
+        ((AutoCraftingInventory) input).copyStacks(persistentInventory, 1);
     }
 
     private static void debugInventory(Inventory inv) {
@@ -124,8 +120,13 @@ public class AutoCraftingScreenHandler
     public void onContentChanged(Inventory inventory) {
         this.context.run((world, pos) -> AutoCraftingScreenHandler.updateResult(this, world, this.player, this.input,
                 this.result));
-        // TODO figure out where crafting inventory stacks are decremented so hoppers work correctly
+
         syncToPersistentInv();
+    }
+
+    public void onContentSynced() {
+        this.context.run((world, pos) -> AutoCraftingScreenHandler.updateResult(this, world, this.player, this.input,
+                this.result));
     }
 
     @Override

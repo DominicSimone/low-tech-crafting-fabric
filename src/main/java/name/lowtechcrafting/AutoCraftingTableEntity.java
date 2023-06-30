@@ -7,17 +7,15 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.RecipeInputInventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.CraftingRecipe;
-import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.RecipeUnlocker;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
@@ -29,7 +27,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     private AutoCraftingInventory recipeInventory = new AutoCraftingInventory(null, 3, 3);
     private DefaultedList<ItemStack> outputBufferInventory = DefaultedList.ofSize(1, ItemStack.EMPTY);
-    private DefaultedList<ItemStack> recipeOutput = DefaultedList.ofSize(1, ItemStack.EMPTY);
+    private AutoCraftingScreenHandler screen;
 
     public AutoCraftingTableEntity(BlockPos pos, BlockState state) {
         super(LowTechCrafting.AUTOCRAFTING_TABLE_ENTITY, pos, state);
@@ -37,20 +35,18 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     @Override
     public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new AutoCraftingScreenHandler(syncId, playerInventory, this,
+        screen = new AutoCraftingScreenHandler(syncId, playerInventory, this,
                 ScreenHandlerContext.create(player.getWorld(), player.getBlockPos()));
-    }
-
-    @Override
-    public Text getDisplayName() {
-        return Text.translatable(getCachedState().getBlock().getTranslationKey());
+        return screen;
     }
 
     public ItemStack tryCraftItem() {
-        Optional<CraftingRecipe> recipe = world.getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING, recipeInventory, world);
+        Optional<CraftingRecipe> recipe = world.getServer().getRecipeManager().getFirstMatch(RecipeType.CRAFTING,
+                recipeInventory, world);
         ItemStack itemStack = ItemStack.EMPTY;
         ItemStack itemStack2;
-        if (recipe.isPresent() && (itemStack2 = recipe.get().craft(recipeInventory, world.getRegistryManager())).isItemEnabled(world.getEnabledFeatures())) {
+        if (recipe.isPresent() && (itemStack2 = recipe.get().craft(recipeInventory, world.getRegistryManager()))
+                .isItemEnabled(world.getEnabledFeatures())) {
             itemStack = itemStack2;
         }
         return itemStack;
@@ -58,7 +54,8 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     // Called from CraftingResultSlot in normal Crafting workflow
     public void removeIngredients() {
-        DefaultedList<ItemStack> defaultedList = world.getServer().getRecipeManager().getRemainingStacks(RecipeType.CRAFTING, recipeInventory, this.world);
+        DefaultedList<ItemStack> defaultedList = world.getServer().getRecipeManager()
+                .getRemainingStacks(RecipeType.CRAFTING, recipeInventory, this.world);
         for (int i = 0; i < defaultedList.size(); ++i) {
             ItemStack itemStack = recipeInventory.getStack(i);
             ItemStack itemStack2 = defaultedList.get(i);
@@ -66,7 +63,8 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
                 recipeInventory.removeStack(i, 1);
                 itemStack = recipeInventory.getStack(i);
             }
-            if (itemStack2.isEmpty()) continue;
+            if (itemStack2.isEmpty())
+                continue;
             if (itemStack.isEmpty()) {
                 recipeInventory.setStack(i, itemStack2);
                 continue;
@@ -79,12 +77,20 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
         }
     }
 
+    public void doCraft() {
+        if (outputBufferInventory.get(0).isEmpty()) {
+            ItemStack item = tryCraftItem();
+            outputBufferInventory.set(0, item);
+            removeIngredients();
+            markDirty();
+        }
+    }
+
     @Override
     public void writeNbt(NbtCompound nbt) {
         super.writeNbt(nbt);
         Inventories.writeNbt(nbt, recipeInventory.stacks);
         Inventories.writeNbt(nbt, outputBufferInventory);
-        Inventories.writeNbt(nbt, recipeOutput);
     }
 
     @Override
@@ -92,14 +98,12 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
         super.readNbt(nbt);
         Inventories.readNbt(nbt, recipeInventory.stacks);
         Inventories.readNbt(nbt, outputBufferInventory);
-        Inventories.readNbt(nbt, recipeOutput);
     }
 
     @Override
     public void clear() {
         recipeInventory.clear();
         outputBufferInventory.clear();
-        recipeOutput.clear();
         markDirty();
     }
 
@@ -111,7 +115,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
     @Override
     public boolean isEmpty() {
         for (int i = 0; i < size(); i++) {
-            if (!recipeInventory.getStack(i).isEmpty() && !outputBufferInventory.get(i).isEmpty()) {
+            if (!recipeInventory.getStack(i).isEmpty() && !outputBufferInventory.get(0).isEmpty()) {
                 return false;
             }
         }
@@ -122,9 +126,12 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
     public ItemStack removeStack(int slot) {
         markDirty();
         if (slot == 0) {
+            doCraft();
             return Inventories.removeStack(outputBufferInventory, slot);
         } else {
-            return Inventories.removeStack(recipeInventory.stacks, slot-1);
+            ItemStack result = Inventories.removeStack(recipeInventory.stacks, slot - 1);
+            updateScreen();
+            return result;
         }
     }
 
@@ -132,11 +139,13 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
     public ItemStack removeStack(int slot, int count) {
         ItemStack result;
         if (slot == 0) {
+            doCraft();
             result = Inventories.splitStack(outputBufferInventory, slot, count);
         } else {
-            result = Inventories.splitStack(recipeInventory.stacks, slot-1, count);
+            result = Inventories.splitStack(recipeInventory.stacks, slot - 1, count);
         }
         if (!result.isEmpty()) {
+            updateScreen();
             markDirty();
         }
         return result;
@@ -144,13 +153,15 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     @Override
     public void setStack(int slot, ItemStack stack) {
-        if (slot == 0){
-            outputBufferInventory.set(slot, stack);
-        } else {
-            recipeInventory.setStack(slot-1, stack);
-        }
         if (stack.getCount() > stack.getMaxCount()) {
             stack.setCount(stack.getMaxCount());
+        }
+        if (slot == 0) {
+            outputBufferInventory.set(slot, stack);
+            updateScreen();
+        } else {
+            recipeInventory.setStack(slot - 1, stack);
+            updateScreen();
         }
         markDirty();
     }
@@ -162,7 +173,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     @Override
     public boolean canTransferTo(Inventory hopperInventory, int slot, ItemStack stack) {
-        if (outputBufferInventory.get(0).isEmpty()) {
+        if (outputBufferInventory.get(0).isEmpty() && tryCraftItem().isEmpty()) {
             return slot > 0;
         } else {
             return slot == 0;
@@ -171,7 +182,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     @Override
     public boolean isValid(int slot, ItemStack stack) {
-        return slot > 0 && this.recipeInventory.getStack(slot-1).getCount() == 0;
+        return slot > 0 && this.recipeInventory.getStack(slot - 1).getCount() == 0;
     }
 
     @Override
@@ -180,6 +191,9 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
             return ItemStack.EMPTY;
         }
         if (slot == 0) {
+            if (outputBufferInventory.get(slot).isEmpty()) {
+                return tryCraftItem();
+            }
             return outputBufferInventory.get(slot);
         } else {
             return recipeInventory.getStack(slot - 1);
@@ -208,67 +222,49 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
         return recipeInventory.stacks;
     }
 
-    // -0-------------------
-    // public static class ItemHandlerWrapperCrafterExternal implements IItemHandler
-    // {
-    // private final IItemHandler inventoryCrafter;
+    public void syncFromScreen(RecipeInputInventory input) {
+        if (input.size() > 8) {
+            for (int i = 0; i < 9; i++) {
+                recipeInventory.setStack(i, input.getStack(i));
+            }
+        }
+    }
 
-    // public ItemHandlerWrapperCrafterExternal(IItemHandler inventoryCrafter) {
-    // this.inventoryCrafter = inventoryCrafter;
-    // }
+    public Inventory getDroppableStacks() {
+        SimpleInventory inv = new SimpleInventory(10);
+        for (int i = 0; i < 9; i++) {
+            if (!recipeInventory.getStack(i).isEmpty()) {
+                inv.addStack(recipeInventory.getStack(i));
+            }
+        }
+        if (!outputBufferInventory.get(0).isEmpty()) {
+            inv.addStack(outputBufferInventory.get(0));
+        }
+        return inv;
+    }
 
-    // @Override
-    // public int getSlots() {
-    // return this.inventoryCrafter.getSlots();
-    // }
+    public int calcRedstoneFromInventory() {
+        int nonEmptyStacks = 0;
+        for (int i = 0; i < 9; i++) {
+            if (!recipeInventory.getStack(i).isEmpty()) {
+                nonEmptyStacks++;
+            }
+        }
+        if (!outputBufferInventory.get(0).isEmpty()) {
+            nonEmptyStacks++;
+        }
+        return (nonEmptyStacks * 15) / 10;
+    }
 
-    // @Override
-    // public int getSlotLimit(int slot) {
-    // return slot == 0 ? this.inventoryCrafter.getSlotLimit(slot) : 1;
-    // }
+    public void updateScreen() {
+        if (screen != null) {
+            screen.syncFromPersistentInv();
+        }
+    }
 
-    // @Override
-    // public ItemStack getStackInSlot(int slot) {
-    // return this.inventoryCrafter.getStackInSlot(slot);
-    // }
-
-    // @Override
-    // public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-    // if (this.isItemValid(slot, stack) == false) {
-    // return stack;
-    // }
-
-    // // Trying to insert more than one item: only insert one of them
-    // if (stack.getCount() > 1) {
-    // ItemStack stackInsert = stack.copy();
-    // stackInsert.setCount(1);
-    // stackInsert = this.inventoryCrafter.insertItem(slot, stackInsert, simulate);
-
-    // // Successfully inserted, return the original stack shrunk by one
-    // if (stackInsert.isEmpty()) {
-    // stack = stack.copy();
-    // stack.decrement(1);
-    // return stack;
-    // }
-    // // else: Could not insert, return the original stack
-    // return stack;
-    // }
-    // // Only inserting one item, handle it directly
-    // else {
-    // return this.inventoryCrafter.insertItem(slot, stack, simulate);
-    // }
-    // }
-
-    // @Override
-    // public ItemStack extractItem(int slot, int amount, boolean simulate) {
-    // return this.inventoryCrafter.extractItem(slot, amount, simulate);
-    // }
-
-    // @Override
-    // public boolean isItemValid(int slot, ItemStack stack) {
-    // return slot != 0 && this.inventoryCrafter.getStackInSlot(slot).isEmpty() !=
-    // false;
-    // }
-    // }
+    @Override
+    public Text getDisplayName() {
+        return Text.translatable("block.minecraft.crafting_table");
+    }
 
 }
