@@ -228,6 +228,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
                 recipeInventory.setStack(i, input.getStack(i));
             }
         }
+        markDirty();
     }
 
     public Inventory getDroppableStacks() {

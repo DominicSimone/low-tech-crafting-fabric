@@ -68,28 +68,17 @@ public class AutoCraftingScreenHandler
         for (i = 0; i < 9; ++i) {
             this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
         }
-        Log.info(LogCategory.GENERAL, "Init ------" + inventory);
         syncFromPersistentInv();
-        debugInventory(persistentInventory);
     }
 
     public void syncToPersistentInv() {
         if (persistentInventory instanceof AutoCraftingTableEntity) {
             ((AutoCraftingTableEntity) persistentInventory).syncFromScreen(input);
-            debugInventory(persistentInventory);
         }
     }
 
     public void syncFromPersistentInv() {
         ((AutoCraftingInventory) input).copyStacks(persistentInventory, 1);
-    }
-
-    private static void debugInventory(Inventory inv) {
-        ArrayList<String> debug = new ArrayList<>();
-        for (int i = 0; i < inv.size(); i++) {
-            debug.add(String.format("%s:%d", inv.getStack(i).getItem().toString(), inv.getStack(i).getCount()));
-        }
-        Log.info(LogCategory.GENERAL, debug.toString());
     }
 
     protected static void updateResult(ScreenHandler handler, World world, PlayerEntity player,

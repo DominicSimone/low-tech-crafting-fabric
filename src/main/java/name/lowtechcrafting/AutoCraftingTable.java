@@ -43,7 +43,7 @@ public class AutoCraftingTable extends BlockWithEntity {
         return ((AutoCraftingTableEntity) world.getBlockEntity(pos)).calcRedstoneFromInventory();
     }
 
-    // TODO last thing? update comparators when inventory updates
+    // TODO save + quit doesn't save contents of crafting table
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
