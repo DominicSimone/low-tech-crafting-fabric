@@ -13,6 +13,8 @@ import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.recipe.RecipeType;
@@ -88,16 +90,26 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
 
     @Override
     public void writeNbt(NbtCompound nbt) {
-        super.writeNbt(nbt);
         Inventories.writeNbt(nbt, recipeInventory.stacks);
-        Inventories.writeNbt(nbt, outputBufferInventory);
+
+        ItemStack outputItems = outputBufferInventory.get(0);
+        if (!outputItems.isEmpty()) {
+            NbtList nbtList = (NbtList) nbt.get("Items");
+            NbtCompound nbtCompound = new NbtCompound();
+            nbtCompound.putByte("Slot", (byte)10);
+            outputItems.writeNbt(nbtCompound);
+            nbtList.add(nbtCompound);
+        }
     }
 
     @Override
     public void readNbt(NbtCompound nbt) {
-        super.readNbt(nbt);
         Inventories.readNbt(nbt, recipeInventory.stacks);
-        Inventories.readNbt(nbt, outputBufferInventory);
+        NbtList nbtList = nbt.getList("Items", NbtElement.COMPOUND_TYPE);
+        NbtCompound nbtCompound = nbtList.getCompound(nbtList.size() - 1);
+        if (nbtCompound.getByte("Slot") == (byte) 10) {
+            outputBufferInventory.set(0, ItemStack.fromNbt(nbtCompound));
+        }
     }
 
     @Override
@@ -254,7 +266,7 @@ public class AutoCraftingTableEntity extends BlockEntity implements RecipeInputI
         if (!outputBufferInventory.get(0).isEmpty()) {
             nonEmptyStacks++;
         }
-        return (nonEmptyStacks * 15) / 10;
+        return nonEmptyStacks;
     }
 
     public void updateScreen() {

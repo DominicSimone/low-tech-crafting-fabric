@@ -1,15 +1,15 @@
 {
 	"schemaVersion": 1,
 	"id": "lowtechcrafting",
-	"version": "0.1",
+	"version": "1.0",
 	"name": "lowtechcrafting",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Fabric implementation of the low tech crafting Forge mod. As close to vanilla auto crafting as possible.",
 	"authors": [
 		"Me!"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/DominicSimone/low-tech-crafting-template-1.20.1"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/lowtechcrafting/icon.png",
