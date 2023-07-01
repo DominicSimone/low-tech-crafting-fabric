@@ -1,4 +1,4 @@
-package name.lowtechcrafting;
+package com.lowtechcrafting;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;

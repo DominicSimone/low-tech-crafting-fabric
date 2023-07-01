@@ -1,4 +1,4 @@
-package name.lowtechcrafting;
+package com.lowtechcrafting;
 
 import java.util.Optional;
 
@@ -126,7 +126,7 @@ public class AutoCraftingScreenHandler
 
     @Override
     public boolean matches(Recipe<? super RecipeInputInventory> recipe) {
-        return recipe.matches(this.input, this.player.getWorld());
+        return recipe.matches(this.input, this.player.method_48926());
     }
 
     @Override

@@ -10,3 +10,5 @@ Requires both [Fabric and the Fabric API](https://fabricmc.net/use/installer/).
 - Hoppers/Droppers can insert items into this table, only inserting max one item into empty recipe slots.
 - Hoppers can remove items from this table, prioritizing crafting if the ingredients match a recipe and pulling from a hidden crafting result inventory slot. 
 - This block emits a comparator signal equal to the number of occupied slots, from 0 (empty) to 10 (all nine grid slots + hidden crafting result slot non-empty)
+
+Untested on multiplayer! Let me know how it goes if you try it.

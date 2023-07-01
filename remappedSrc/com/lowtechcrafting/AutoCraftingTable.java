@@ -1,4 +1,4 @@
-package name.lowtechcrafting;
+package com.lowtechcrafting;
 
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;

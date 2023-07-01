@@ -1,4 +1,4 @@
-package name.lowtechcrafting;
+package com.lowtechcrafting;
 
 import java.util.List;
 

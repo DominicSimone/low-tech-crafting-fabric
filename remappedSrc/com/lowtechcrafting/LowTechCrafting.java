@@ -1,4 +1,4 @@
-package name.lowtechcrafting;
+package com.lowtechcrafting;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
