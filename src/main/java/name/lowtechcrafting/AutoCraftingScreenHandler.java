@@ -1,15 +1,9 @@
 package name.lowtechcrafting;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.RecipeInputInventory;
@@ -143,10 +137,7 @@ public class AutoCraftingScreenHandler
 
     @Override
     public boolean canUse(PlayerEntity player) {
-        // TODO need to set this block state to this block? canUse is what is closing
-        // the menu
-        return true;// AutoCraftingScreenHandler.canUse(this.context, player,
-                    // LowTechCrafting.AUTOCRAFTING_TABLE_BLOCK);
+        return true;
     }
 
     @Override
