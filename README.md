@@ -2,6 +2,8 @@
 
 A Fabric, 1.20.1 port of the [existing Forge mod Low Tech Crafting](https://www.curseforge.com/minecraft/mc-mods/low-tech-crafting) and inspired by [ilmango's video](https://www.youtube.com/watch?v=2_HL309IZ0M) on the subject.
 
+Requires both [Fabric and the Fabric API](https://fabricmc.net/use/installer/).
+
 ### Features
 
 - Adds a Crafting Table variant with a recipe of one redstone block and one crafting table.
