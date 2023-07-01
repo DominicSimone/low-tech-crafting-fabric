@@ -3,9 +3,9 @@
 	"id": "lowtechcrafting",
 	"version": "1.0",
 	"name": "lowtechcrafting",
-	"description": "Fabric implementation of the low tech crafting Forge mod. As close to vanilla auto crafting as possible.",
+	"description": "Fabric implementation of the low tech crafting Forge mod. As close to vanilla as auto crafting can be. Insert items extract results via hopper.",
 	"authors": [
-		"Me!"
+		"Dominic Simone"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
@@ -22,13 +22,6 @@
 			"name.lowtechcrafting.LowTechCraftingClient"
 		]
 	},
-	"mixins": [
-		"lowtechcrafting.mixins.json",
-		{
-			"config": "lowtechcrafting.client.mixins.json",
-			"environment": "client"
-		}
-	],
 	"depends": {
 		"fabricloader": ">=0.14.21",
 		"minecraft": "~1.20.1",
